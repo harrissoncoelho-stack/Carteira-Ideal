@@ -20,19 +20,14 @@
   </style>
 </head>
 <body>
-
 <h1>Calculadora Avançada de Investimentos</h1>
-
 <div class="container">
   <label for="aporteInicial">Aporte Inicial (R$):</label>
   <input type="number" id="aporteInicial" placeholder="Ex: 1000">
-
   <label for="aporteMensal">Aporte Mensal (R$):</label>
   <input type="number" id="aporteMensal" placeholder="Ex: 500">
-
   <label for="anos">Tempo de Aplicação (anos):</label>
   <input type="number" id="anos" placeholder="Ex: 10">
-
   <label for="tipoTaxa">Tipo de Juros:</label>
   <select id="tipoTaxa">
     <option value="pre">Pré-fixada</option>
@@ -40,7 +35,6 @@
     <option value="cdi">CDI</option>
     <option value="ipca">IPCA</option>
   </select>
-
   <label for="taxaJuros">Taxa de Juros (% ao ano):</label>
   <input type="number" id="taxaJuros" placeholder="Ex: 10">
 
@@ -49,16 +43,13 @@
     <option value="ano">Anual</option>
     <option value="mes">Mensal</option>
   </select>
-
   <button onclick="calcularInvestimento()">Calcular</button>
-
   <div id="resultado">
     <canvas id="graficoInvestimento"></canvas>
     <div id="valoresAno" style="margin-top: 20px;"></div>
     <div id="resumoFinal" style="margin-top: 20px;"></div>
   </div>
 </div>
-
 <script>
 async function obterTaxas() {
   try {
@@ -76,7 +67,6 @@ async function obterTaxas() {
     return { cdiAtual: 0.149, ipcaAtual: 0.0315 }; // Valores padrão em caso de erro
   }
 }
-
 function calcularInvestimento() {
   const aporteInicial = parseFloat(document.getElementById('aporteInicial').value) || 0;
   const aporteMensal = parseFloat(document.getElementById('aporteMensal').value) || 0;
@@ -90,23 +80,19 @@ function calcularInvestimento() {
   } else if (tipoTaxa === 'ipca') {
     taxaJuros = 0.0315; // IPCA atual
   }
-
   if (tipoCalc === 'mes') {
     taxaJuros = Math.pow(1 + taxaJuros, 1 / 12) - 1;
   }
-
   let valorInvestidoAno = aporteInicial;
   let totalInvestido = aporteInicial;
   const valoresAno = [];
   const aportesAno = [];
-
   for (let i = 1; i <= anos; i++) {
     totalInvestido += aporteMensal * 12;
     valorInvestidoAno = (valorInvestidoAno + aporteMensal * 12) * (1 + taxaJuros);
     valoresAno.push(parseFloat(valorInvestidoAno.toFixed(2)));
     aportesAno.push(parseFloat(totalInvestido.toFixed(2)));
   }
-
   let divValores = document.getElementById('valoresAno');
   divValores.innerHTML = '<h3>Evolução do Investimento:</h3>';
   let tabela = '<table><tr><th>Ano</th><th>Total Investido (R$)</th><th>Valor Total com Rendimentos (R$)</th></tr>';
@@ -115,7 +101,6 @@ function calcularInvestimento() {
   }
   tabela += '</table>';
   divValores.innerHTML += tabela;
-
   const ctx = document.getElementById('graficoInvestimento').getContext('2d');
   if (window.grafico) window.grafico.destroy();
   window.grafico = new Chart(ctx, {
@@ -161,7 +146,6 @@ function calcularInvestimento() {
       }
     }
   });
-
   const resumo = document.getElementById('resumoFinal');
   const totalGanho = valoresAno[anos - 1] - aportesAno[anos - 1];
   const percentualGanho = ((totalGanho / aportesAno[anos - 

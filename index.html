@@ -42,7 +42,7 @@
   </select>
 
   <label for="taxaJuros">Taxa de Juros (% ao ano):</label>
-  <input type="number" id="taxaJuros" placeholder="Ex: 10">
+  <input type="number" id="taxaJuros" placeholder="Ex: 12">
 
   <label for="tipoTaxaCalc">Taxa calculada:</label>
   <select id="tipoTaxaCalc">
@@ -73,7 +73,7 @@ async function obterTaxas() {
     return { cdiAtual, ipcaAtual };
   } catch (error) {
     console.error('Erro ao obter taxas:', error);
-    return { cdiAtual: 0.149, ipcaAtual: 0.0315 }; // Valores padrão
+    return { cdiAtual: 0.149, ipcaAtual: 0.0315 };
   }
 }
 
@@ -91,29 +91,29 @@ async function calcularInvestimento() {
     if (tipoTaxa === 'ipca') taxaJuros = taxas.ipcaAtual;
   }
 
-  if (tipoCalc === 'mes') {
-    taxaJuros = Math.pow(1 + taxaJuros, 1 / 12) - 1;
+  // Converter taxa anual para mensal para os cálculos de juros compostos
+  const taxaMensal = Math.pow(1 + taxaJuros, 1 / 12) - 1;
+  const totalMeses = anos * 12;
+
+  let valoresMes = [];
+  let totalInvestidoMes = aporteInicial;
+  let valorFinal = aporteInicial;
+
+  for (let i = 1; i <= totalMeses; i++) {
+    valorFinal = valorFinal * (1 + taxaMensal) + aporteMensal;
+    totalInvestidoMes += aporteMensal;
+    if (i % 12 === 0) {
+      valoresMes.push({ ano: i / 12, investido: totalInvestidoMes, total: valorFinal });
+    }
   }
 
-  let valorInvestidoAno = aporteInicial;
-  let totalInvestido = aporteInicial;
-  const valoresAno = [];
-  const aportesAno = [];
-
-  for (let i = 1; i <= anos; i++) {
-    totalInvestido += aporteMensal * 12;
-    valorInvestidoAno = (valorInvestidoAno + aporteMensal * 12) * (1 + taxaJuros);
-    valoresAno.push(parseFloat(valorInvestidoAno.toFixed(2)));
-    aportesAno.push(parseFloat(totalInvestido.toFixed(2)));
-  }
-
-  // Tabela de evolução
+  // Criar tabela
   let divValores = document.getElementById('valoresAno');
   divValores.innerHTML = '<h3>Evolução do Investimento:</h3>';
   let tabela = '<table><tr><th>Ano</th><th>Total Investido (R$)</th><th>Valor Total com Rendimentos (R$)</th></tr>';
-  for (let i = 0; i < anos; i++) {
-    tabela += `<tr><td>${i + 1}</td><td>${aportesAno[i].toLocaleString('pt-BR')}</td><td>${valoresAno[i].toLocaleString('pt-BR')}</td></tr>`;
-  }
+  valoresMes.forEach(v => {
+    tabela += `<tr><td>${v.ano}</td><td>${v.investido.toLocaleString('pt-BR')}</td><td>${v.total.toLocaleString('pt-BR')}</td></tr>`;
+  });
   tabela += '</table>';
   divValores.innerHTML += tabela;
 
@@ -123,11 +123,11 @@ async function calcularInvestimento() {
   window.grafico = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: Array.from({ length: anos }, (_, i) => `Ano ${i + 1}`),
+      labels: valoresMes.map(v => `Ano ${v.ano}`),
       datasets: [
         {
           label: 'Total Investido (R$)',
-          data: aportesAno,
+          data: valoresMes.map(v => v.investido),
           borderColor: '#0096c7',
           backgroundColor: 'rgba(0,150,199,0.2)',
           fill: false,
@@ -135,7 +135,7 @@ async function calcularInvestimento() {
         },
         {
           label: 'Valor Total com Rendimentos (R$)',
-          data: valoresAno,
+          data: valoresMes.map(v => v.total),
           borderColor: '#0077b6',
           backgroundColor: 'rgba(0,119,182,0.2)',
           fill: true,
@@ -166,12 +166,12 @@ async function calcularInvestimento() {
 
   // Resumo final
   const resumo = document.getElementById('resumoFinal');
-  const totalGanho = valoresAno[anos - 1] - aportesAno[anos - 1];
-  const percentualGanho = ((totalGanho / aportesAno[anos - 1]) * 100).toFixed(2);
+  const totalGanho = valorFinal - totalInvestidoMes;
+  const percentualGanho = ((totalGanho / totalInvestidoMes) * 100).toFixed(2);
 
   resumo.innerHTML = `<h3>Resumo Final:</h3>
-      <p>Total Investido: R$ ${aportesAno[anos - 1].toLocaleString('pt-BR')}</p>
-      <p>Valor Total com Rendimentos: R$ ${valoresAno[anos - 1].toLocaleString('pt-BR')}</p>
+      <p>Total Investido: R$ ${totalInvestidoMes.toLocaleString('pt-BR')}</p>
+      <p>Valor Total com Rendimentos: R$ ${valorFinal.toLocaleString('pt-BR')}</p>
       <p>Ganho Total: R$ ${totalGanho.toLocaleString('pt-BR')} (${percentualGanho}%)</p>`;
 }
 </script>

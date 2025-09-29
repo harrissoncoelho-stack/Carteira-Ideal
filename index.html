@@ -3,104 +3,166 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculadora de Investimentos</title>
+  <title>Calculadora Avançada de Investimentos</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f9;
-      color: #333;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .calculator {
-      background: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 600px;
-      width: 100%;
-    }
-    .calculator h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      color: #0066cc;
-    }
-    label {
-      font-size: 14px;
-      margin-top: 10px;
-      display: block;
-    }
-    input, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    button {
-      margin-top: 20px;
-      padding: 12px;
-      width: 100%;
-      background: #0066cc;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #004999;
-    }
-    .result {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 8px;
-      background: #e9f5ff;
-      border: 1px solid #b3e0ff;
-    }
-    .result p {
-      margin: 8px 0;
-      font-weight: bold;
-    }
-    canvas {
-      margin-top: 20px;
-    }
+    body { font-family: Arial, sans-serif; background-color: #f4f6f9; color: #333; padding: 20px; }
+    h1 { text-align: center; color: #0077b6; }
+    .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    label { display: block; margin: 10px 0 5px; }
+    input, select { width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #ccc; margin-bottom: 15px; }
+    button { background-color: #0077b6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    button:hover { background-color: #005f87; }
+    #resultado { margin-top: 30px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: right; }
+    th { background-color: #0077b6; color: white; }
   </style>
 </head>
 <body>
-  <div class="calculator">
-    <h2>Simulador de Investimentos</h2>
 
-    <label>Tipo de investimento</label>
-    <select id="tipoInvestimento">
-      <option value="cdb">CDB (% do CDI)</option>
-      <option value="lci">LCI/LCA (isento IR)</option>
-      <option value="ipca">IPCA + Taxa</option>
-      <option value="prefixado">Pré-fixado</option>
-    </select>
+<h1>Calculadora Avançada de Investimentos</h1>
 
-    <label>Valor inicial (R$)</label>
-    <input type="number" id="valorInicial" placeholder="Ex: 1000">
+<div class="container">
+  <label for="aporteInicial">Aporte Inicial (R$):</label>
+  <input type="number" id="aporteInicial" placeholder="Ex: 1000">
 
-    <label>Aporte mensal (R$)</label>
-    <input type="number" id="aporteMensal" placeholder="Ex: 200">
+  <label for="aporteMensal">Aporte Mensal (R$):</label>
+  <input type="number" id="aporteMensal" placeholder="Ex: 500">
 
-    <label>Taxa (% ao ano)</label>
-    <input type="number" id="taxaJuros" placeholder="Ex: 12">
+  <label for="anos">Tempo de Aplicação (anos):</label>
+  <input type="number" id="anos" placeholder="Ex: 10">
 
-    <label>Inflação (IPCA % ao ano) [se aplicável]</label>
-    <input type="number" id="ipca" placeholder="Ex: 4">
+  <label for="tipoTaxa">Tipo de Juros:</label>
+  <select id="tipoTaxa">
+    <option value="pre">Pré-fixada</option>
+    <option value="pos">Pós-fixada</option>
+    <option value="cdi">CDI</option>
+    <option value="ipca">IPCA</option>
+  </select>
 
-    <label>Prazo (anos)</label>
-    <input type="number" id="prazo" placeholder="Ex: 5">
+  <label for="taxaJuros">Taxa de Juros (% ao ano):</label>
+  <input type="number" id="taxaJuros" placeholder="Ex: 10">
 
-    <button onclick="calcular()">Calcular</button>
+  <label for="tipoTaxaCalc">Taxa calculada:</label>
+  <select id="tipoTaxaCalc">
+    <option value="ano">Anual</option>
+    <option value="mes">Mensal</option>
+  </select>
 
-    <div class="result" id="resultado" style="display:none;"></div>
-    <canvas id="graficoEvolucao" style="display:none;"></canvas>
+  <button onclick="calcularInvestimento()">Calcular</button>
+
+  <div id="resultado">
+    <canvas id="graficoInvestimento"></canvas>
+    <div id="valoresAno" style="margin-top: 20px;"></div>
+    <div id="resumoFinal" style="margin-top: 20px;"></div>
   </div>
+</div>
+
+<script>
+async function obterTaxas() {
+  try {
+    const cdiResponse = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json');
+    const ipcaResponse = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json');
+    const cdiData = await cdiResponse.json();
+    const ipcaData = await ipcaResponse.json();
+
+    const cdiAtual = parseFloat(cdiData[cdiData.length - 1].valor.replace(',', '.')) / 100;
+    const ipcaAtual = parseFloat(ipcaData[ipcaData.length - 1].valor.replace(',', '.')) / 100;
+
+    return { cdiAtual, ipcaAtual };
+  } catch (error) {
+    console.error('Erro ao obter taxas:', error);
+    return { cdiAtual: 0.149, ipcaAtual: 0.0315 }; // Valores padrão em caso de erro
+  }
+}
+
+function calcularInvestimento() {
+  const aporteInicial = parseFloat(document.getElementById('aporteInicial').value) || 0;
+  const aporteMensal = parseFloat(document.getElementById('aporteMensal').value) || 0;
+  const anos = parseInt(document.getElementById('anos').value) || 0;
+  const tipoTaxa = document.getElementById('tipoTaxa').value;
+  let taxaJuros = parseFloat(document.getElementById('taxaJuros').value) / 100 || 0;
+  const tipoCalc = document.getElementById('tipoTaxaCalc').value;
+
+  if (tipoTaxa === 'cdi') {
+    taxaJuros = 0.149; // CDI atual
+  } else if (tipoTaxa === 'ipca') {
+    taxaJuros = 0.0315; // IPCA atual
+  }
+
+  if (tipoCalc === 'mes') {
+    taxaJuros = Math.pow(1 + taxaJuros, 1 / 12) - 1;
+  }
+
+  let valorInvestidoAno = aporteInicial;
+  let totalInvestido = aporteInicial;
+  const valoresAno = [];
+  const aportesAno = [];
+
+  for (let i = 1; i <= anos; i++) {
+    totalInvestido += aporteMensal * 12;
+    valorInvestidoAno = (valorInvestidoAno + aporteMensal * 12) * (1 + taxaJuros);
+    valoresAno.push(parseFloat(valorInvestidoAno.toFixed(2)));
+    aportesAno.push(parseFloat(totalInvestido.toFixed(2)));
+  }
+
+  let divValores = document.getElementById('valoresAno');
+  divValores.innerHTML = '<h3>Evolução do Investimento:</h3>';
+  let tabela = '<table><tr><th>Ano</th><th>Total Investido (R$)</th><th>Valor Total com Rendimentos (R$)</th></tr>';
+  for (let i = 0; i < anos; i++) {
+    tabela += `<tr><td>${i + 1}</td><td>${aportesAno[i].toLocaleString('pt-BR')}</td><td>${valoresAno[i].toLocaleString('pt-BR')}</td></tr>`;
+  }
+  tabela += '</table>';
+  divValores.innerHTML += tabela;
+
+  const ctx = document.getElementById('graficoInvestimento').getContext('2d');
+  if (window.grafico) window.grafico.destroy();
+  window.grafico = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array.from({ length: anos }, (_, i) => `Ano ${i + 1}`),
+      datasets: [
+        {
+          label: 'Total Investido (R$)',
+          data: aportesAno,
+          borderColor: '#0096c7',
+          backgroundColor: 'rgba(0,150,199,0.2)',
+          fill: false,
+          tension: 0.3
+        },
+        {
+          label: 'Valor Total com Rendimentos (R$)',
+          data: valoresAno,
+          borderColor: '#0077b6',
+          backgroundColor: 'rgba(0,119,182,0.2)',
+          fill: true,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true, position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              return context.dataset.label + ': R$ ' + context.raw.toLocaleString('pt-BR');
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { callback: value => 'R$ ' + value.toLocaleString('pt-BR') }
+        }
+      }
+    }
+  });
+
+  const resumo = document.getElementById('resumoFinal');
+  const totalGanho = valoresAno[anos - 1] - aportesAno[anos - 1];
+  const percentualGanho = ((totalGanho / aportesAno[anos - 
+::contentReference[oaicite:31]{index=31}
